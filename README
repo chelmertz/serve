@@ -1,0 +1,9 @@
+Serve a directory over HTTP, with a twist: prints a QR code for your mobile testing needs.
+
+Usage:
+  -d string
+    	directory (default ".")
+  -p string
+    	port (default "8000")
+  -q	don't print qr code
+  -w	don't try to open url in your local browser
