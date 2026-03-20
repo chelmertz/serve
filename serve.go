@@ -41,19 +41,25 @@ func main() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Serve a directory over HTTP, with a twist: prints a QR code for your mobile testing needs.\n\nUsage:\n")
 		flag.PrintDefaults()
 	}
-	port := flag.String("p", "7999", "port")
+	port := flag.String("p", "0", "port (0 = random free port)")
 	directory := flag.String("d", ".", "directory")
 	hideQr := flag.Bool("q", false, "don't print qr code")
 	dontOpenCurrentPage := flag.Bool("w", false, "don't try to open url in your local browser")
 	flag.Parse()
 
-	url := fmt.Sprintf("http://%s:%s", outboundIp(), *port)
+	listener, err := net.Listen("tcp", ":"+*port)
+	if err != nil {
+		log.Fatal(err)
+	}
+	actualPort := listener.Addr().(*net.TCPAddr).Port
+	url := fmt.Sprintf("http://%s:%d", outboundIp(), actualPort)
 
 	if !*hideQr {
 		qrterminal.GenerateWithConfig(url, qrConfig)
 	}
 
-	log.Printf("Serving %s on %s\n", *directory, url)
+	fmt.Printf("url: %s\n", url)
+	fmt.Fprintf(os.Stderr, "Serving %s on %s\n", *directory, url)
 	if !*dontOpenCurrentPage {
 		time.AfterFunc(500*time.Millisecond, func() {
 			for _, opener := range []string{"xdg-open", "open"} {
@@ -68,5 +74,5 @@ func main() {
 	}
 
 	http.Handle("/", http.FileServer(http.Dir(*directory)))
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
+	log.Fatal(http.Serve(listener, nil))
 }
