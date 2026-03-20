@@ -18,6 +18,13 @@
         src = ./.;
       };
 
+      devShells.x86_64-linux.default = pkgs.mkShell {
+        buildInputs = [ pkgs.go ];
+        shellHook = ''
+          git config core.hooksPath .githooks
+        '';
+      };
+
       overlays.default = final: prev: {
         serve = self.packages.${final.system}.default;
       };

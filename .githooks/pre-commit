@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Only act when Go dependencies or the Nix flake lock changed
+if ! git diff --cached --name-only | grep -qE '^(go\.mod|go\.sum|flake\.lock)$'; then
+    exit 0
+fi
+
+if ! command -v nix &>/dev/null; then
+    echo "pre-commit: nix not found, skipping vendorHash check"
+    exit 0
+fi
+
+echo "pre-commit: Go dependencies or flake.lock changed, verifying vendorHash..."
+
+output=$(nix build 2>&1) && exit 0
+
+new_hash=$(echo "$output" | grep 'got:' | awk '{print $2}')
+if [ -z "$new_hash" ]; then
+    echo "pre-commit: nix build failed for a reason other than vendorHash mismatch:"
+    echo "$output"
+    exit 1
+fi
+
+sed -i "s|vendorHash = \"sha256-[^\"]*\"|vendorHash = \"$new_hash\"|" flake.nix
+
+if ! nix build 2>&1; then
+    echo "pre-commit: updated vendorHash to $new_hash but nix build still fails"
+    exit 1
+fi
+
+git add flake.nix
+echo "pre-commit: updated vendorHash to $new_hash"
