@@ -56,10 +56,14 @@ func main() {
 	log.Printf("Serving %s on %s\n", *directory, url)
 	if !*dontOpenCurrentPage {
 		time.AfterFunc(500*time.Millisecond, func() {
-			cmd := exec.Command("open", url)
-			if err := cmd.Start(); err != nil {
-				log.Println("Tried everything (open) but couldn't open your browser")
+			for _, opener := range []string{"xdg-open", "open"} {
+				if _, err := exec.LookPath(opener); err == nil {
+					if err := exec.Command(opener, url).Start(); err == nil {
+						return
+					}
+				}
 			}
+			log.Println("Couldn't open your browser (tried xdg-open, open)")
 		})
 	}
 
