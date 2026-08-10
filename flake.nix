@@ -26,7 +26,7 @@
       };
 
       overlays.default = final: prev: {
-        serve = self.packages.${final.system}.default;
+        serve = self.packages.${final.stdenv.hostPlatform.system}.default;
       };
     };
 }
